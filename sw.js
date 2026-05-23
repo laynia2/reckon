@@ -1,4 +1,4 @@
-const VERSION = 'v1.0'; // bump this string every time you push a change
+const VERSION = 'v1.1'; // bump this string every time you push a change
 const CACHE = `reckon-${VERSION}`;
 
 self.addEventListener('install', e => {

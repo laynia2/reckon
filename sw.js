@@ -7,6 +7,7 @@ self.addEventListener('install', e => {
       cache.addAll(['./', './index.html'])
     )
   );
+  caches.open('app-version').then(c => c.put('/app-version', new Response(VERSION)));
 });
 
 self.addEventListener('activate', e => {

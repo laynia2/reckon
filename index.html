@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="reckon">
 <title>reckon.</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
@@ -19,8 +22,6 @@
   --text-dim: #4a4540;
   --mono: 'Fira Code', monospace;
   --serif: 'Lora', Georgia, serif;
-
-  /* syntax colors */
   --c-num:    #e8b86d;
   --c-op:     #c4956a;
   --c-var:    #87b8d4;
@@ -28,21 +29,24 @@
   --c-kw:     #c88fb0;
   --c-unit:   #a8c87a;
   --c-comment:#5a5550;
-  --c-h1:     #e2ddd6;
-  --c-h2:     #c8c0b0;
-  --c-h3:     #a09880;
   --c-result: #a8c87a;
   --c-error:  #d47a6a;
   --c-total:  #e8b86d;
-
-  --sidebar-w: 200px;
-  --result-w: 160px;
-  --radius: 5px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --toolbar-h: 48px;
+  --statusbar-h: 32px;
+  --result-w: 140px;
+  --lnum-w: 34px;
+  --radius: 6px;
+  --sheet-radius: 14px;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html, body {
+html { height: 100%; -webkit-text-size-adjust: 100%; }
+body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
@@ -50,110 +54,316 @@ html, body {
   font-size: 14px;
   line-height: 1.7;
   overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* ══ LAYOUT ══════════════════════════════════ */
+/* ══ ROOT LAYOUT ════════════════════════════ */
 #app {
   display: flex;
-  height: 100vh;
-  width: 100vw;
-}
-
-/* ══ SIDEBAR ════════════════════════════════ */
-#sidebar {
-  width: var(--sidebar-w);
-  min-width: var(--sidebar-w);
-  background: var(--bg2);
-  border-right: 1px solid var(--border);
-  display: flex;
   flex-direction: column;
-  overflow: hidden;
-  transition: width 0.2s ease, min-width 0.2s ease;
+  height: 100dvh;
+  width: 100%;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bot);
 }
 
-#sidebar.collapsed {
-  width: 0;
-  min-width: 0;
-  border-right: none;
-}
-
-.sidebar-header {
-  padding: 16px 14px 12px;
-  border-bottom: 1px solid var(--border);
+/* ══ TOOLBAR ════════════════════════════════ */
+#toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  height: var(--toolbar-h);
+  padding: 0 12px 0 calc(12px + var(--safe-left));
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  gap: 4px;
 }
 
 .app-wordmark {
   font-family: var(--serif);
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   color: var(--c-num);
   letter-spacing: -0.02em;
   font-style: italic;
+  margin-right: 4px;
 }
+
+#nb-title-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--serif);
+  font-size: 0.82rem;
+  font-style: italic;
+  text-align: left;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  transition: color 0.15s;
+}
+#nb-title-btn:hover { color: var(--text); }
 
 .icon-btn {
   background: none;
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 0.9rem;
-  padding: 3px 5px;
-  border-radius: 3px;
+  font-size: 1rem;
+  padding: 6px 8px;
+  border-radius: var(--radius);
   line-height: 1;
   transition: color 0.15s, background 0.15s;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  -webkit-tap-highlight-color: transparent;
 }
-.icon-btn:hover { color: var(--text); background: var(--bg3); }
+.icon-btn:hover, .icon-btn:active { color: var(--text); background: var(--bg3); }
 
-.new-nb-btn {
+/* ══ EDITOR AREA ════════════════════════════ */
+#editor-wrap {
+  flex: 1;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  width: calc(100% - 28px);
-  margin: 10px 14px 6px;
-  background: none;
-  border: 1px dashed var(--border2);
-  color: var(--text-muted);
-  font-family: var(--mono);
-  font-size: 0.75rem;
-  padding: 7px 10px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-  letter-spacing: 0.04em;
+  overflow: hidden;
+  min-height: 0;
 }
-.new-nb-btn:hover { border-color: var(--text-muted); color: var(--text); }
 
-.nb-list {
+#line-nums {
+  width: var(--lnum-w);
+  min-width: var(--lnum-w);
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+  padding-top: 10px;
+  flex-shrink: 0;
+}
+.ln {
+  display: block;
+  height: calc(1.7em);
+  line-height: 1.7;
+  text-align: right;
+  padding-right: 6px;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  user-select: none;
+}
+
+#editor-lines {
   flex: 1;
   overflow-y: auto;
-  padding: 4px 8px 12px;
+  overflow-x: hidden;
+  padding: 10px 0 120px;
+  -webkit-overflow-scrolling: touch;
+  min-width: 0;
 }
+
+#results-col {
+  width: var(--result-w);
+  min-width: var(--result-w);
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+  padding-top: 10px;
+  flex-shrink: 0;
+}
+
+.result-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: calc(1.7em);
+  padding: 0 10px 0 4px;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-result);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.result-cell.empty { color: var(--text-dim); font-size: 0.6rem; }
+.result-cell.err   { color: var(--c-error); font-size: 0.68rem; }
+.result-cell.total { color: var(--c-total); font-weight: 500; }
+.result-cell.head  { color: transparent; }
+
+/* ══ EDITOR ROWS ════════════════════════════ */
+.editor-row {
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  min-height: calc(1.7em);
+}
+.editor-row.active-row { background: rgba(255,255,255,0.03); }
+
+.line-highlight {
+  flex: 1;
+  min-height: calc(1.7em);
+  padding: 0 6px 0 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: text;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  position: relative;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.line-highlight.h1 {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+  padding-top: 6px;
+  padding-bottom: 2px;
+  line-height: 1.4;
+  min-height: calc(1.4em + 8px);
+}
+.line-highlight.h2 {
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #c8c0b0;
+  padding-top: 3px;
+}
+.line-highlight.h3 {
+  font-family: var(--serif);
+  font-size: 0.85rem;
+  font-style: italic;
+  color: #a09880;
+}
+.line-highlight.comment-line { color: var(--c-comment); }
+
+.line-input {
+  position: absolute;
+  left: 10px; top: 0; right: 0; bottom: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: transparent;
+  caret-color: var(--c-num);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  line-height: 1.7;
+  resize: none;
+  padding: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow: hidden;
+  z-index: 2;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* syntax tokens */
+.t-num    { color: var(--c-num); }
+.t-op     { color: var(--c-op); }
+.t-var    { color: var(--c-var); }
+.t-kw     { color: var(--c-kw); }
+.t-unit   { color: var(--c-unit); }
+.t-assign { color: var(--c-assign); }
+.t-paren  { color: var(--c-op); }
+.t-str    { color: var(--text-muted); }
+
+/* ══ STATUS BAR ═════════════════════════════ */
+#status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  height: var(--statusbar-h);
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.status-sum { color: var(--c-result); font-variant-numeric: tabular-nums; }
+
+/* ══ BOTTOM SHEET BASE ══════════════════════ */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+.sheet-backdrop.open { opacity: 1; pointer-events: all; }
+
+.bottom-sheet {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: var(--bg2);
+  border-radius: var(--sheet-radius) var(--sheet-radius) 0 0;
+  border-top: 1px solid var(--border2);
+  z-index: 201;
+  transform: translateY(100%);
+  transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
+  max-height: 85dvh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--safe-bot);
+}
+.bottom-sheet.open { transform: translateY(0); }
+
+.sheet-handle {
+  width: 36px; height: 4px;
+  background: var(--border2);
+  border-radius: 2px;
+  margin: 10px auto 0;
+  flex-shrink: 0;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 10px;
+  flex-shrink: 0;
+}
+
+.sheet-title {
+  font-family: var(--serif);
+  font-size: 1rem;
+  color: var(--text);
+  font-style: italic;
+}
+
+.sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ══ NOTEBOOKS SHEET ════════════════════════ */
+.nb-list { padding: 4px 12px 12px; }
 
 .nb-item {
   display: flex;
   align-items: center;
-  gap: 0;
   border-radius: var(--radius);
-  margin-bottom: 2px;
+  margin-bottom: 3px;
   cursor: pointer;
   transition: background 0.12s;
-  position: relative;
-  group: true;
 }
-.nb-item:hover { background: var(--bg3); }
+.nb-item:hover, .nb-item:active { background: var(--bg3); }
 .nb-item.active { background: var(--bg3); }
 
 .nb-label {
   flex: 1;
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
-  padding: 7px 8px;
+  padding: 11px 10px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -168,292 +378,87 @@ html, body {
   border-radius: 3px;
   color: var(--text);
   font-family: var(--mono);
-  font-size: 0.78rem;
-  padding: 4px 7px;
+  font-size: 0.82rem;
+  padding: 6px 8px;
   outline: none;
-  margin: 3px 4px;
+  margin: 4px 6px;
 }
 
 .nb-del {
   opacity: 0;
-  font-size: 0.7rem;
-  padding: 4px 6px;
+  font-size: 0.72rem;
   color: var(--text-dim);
+  padding: 8px 10px;
 }
-.nb-item:hover .nb-del { opacity: 1; }
-.nb-del:hover { color: var(--c-error) !important; }
+.nb-item:hover .nb-del, .nb-item:active .nb-del { opacity: 1; }
 
-/* ══ MAIN ════════════════════════════════════ */
-#main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
-}
-
-/* toolbar */
-#toolbar {
+.new-nb-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg2);
-  flex-shrink: 0;
-}
-
-.toolbar-sep {
-  width: 1px;
-  height: 16px;
-  background: var(--border2);
-  margin: 0 2px;
-}
-
-.nb-title-display {
-  font-family: var(--serif);
-  font-size: 0.9rem;
+  width: calc(100% - 24px);
+  margin: 0 12px 8px;
+  background: none;
+  border: 1px dashed var(--border2);
   color: var(--text-muted);
-  font-style: italic;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 0 8px;
-}
-
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: auto;
-}
-
-/* ══ EDITOR AREA ════════════════════════════ */
-#editor-wrap {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-  position: relative;
-}
-
-/* Line numbers */
-#line-nums {
-  width: 38px;
-  min-width: 38px;
-  background: var(--bg2);
-  border-right: 1px solid var(--border);
-  overflow: hidden;
-  padding-top: 14px;
-  flex-shrink: 0;
-}
-
-.ln {
-  display: block;
-  height: calc(1.7em);
-  line-height: 1.7;
-  text-align: right;
-  padding-right: 8px;
-  font-size: 0.72rem;
-  color: var(--text-dim);
-  font-variant-numeric: tabular-nums;
-  user-select: none;
-}
-
-/* Editor lines container */
-#editor-lines {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 14px 0 80px;
-  scroll-behavior: smooth;
-  min-width: 0;
-}
-
-/* Result column */
-#results-col {
-  width: var(--result-w);
-  min-width: var(--result-w);
-  background: var(--bg2);
-  border-left: 1px solid var(--border);
-  overflow: hidden;
-  padding-top: 14px;
-  flex-shrink: 0;
-}
-
-.result-cell {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  height: calc(1.7em);
-  padding: 0 14px 0 8px;
-  font-size: 0.82rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--c-result);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.result-cell.empty { color: var(--text-dim); font-size: 0.65rem; }
-.result-cell.err   { color: var(--c-error); font-size: 0.7rem; }
-.result-cell.total { color: var(--c-total); font-weight: 500; }
-.result-cell.head  { color: transparent; }
-
-/* Each editable line row */
-.editor-row {
-  display: flex;
-  align-items: stretch;
-  position: relative;
-  min-height: calc(1.7em);
-}
-
-.editor-row.active-row {
-  background: rgba(255,255,255,0.025);
-}
-
-/* Highlighted (rendered) view */
-.line-highlight {
-  flex: 1;
-  min-height: calc(1.7em);
-  padding: 0 10px 0 14px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  cursor: text;
-  font-size: 0.9rem;
-  line-height: 1.7;
-  position: relative;
-  /* tokens styled by spans */
-}
-
-/* The actual textarea overlay for the active line */
-.line-input {
-  position: absolute;
-  left: 14px;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: transparent;
-  caret-color: var(--c-num);
   font-family: var(--mono);
-  font-size: 0.9rem;
-  line-height: 1.7;
-  resize: none;
-  padding: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow: hidden;
-  z-index: 2;
-  caret-shape: bar;
+  font-size: 0.78rem;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.new-nb-btn:hover, .new-nb-btn:active { border-color: var(--text-muted); color: var(--text); }
+
+.sheet-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 12px 10px;
 }
 
-/* Header line styles */
-.line-highlight.h1 {
-  font-family: var(--serif);
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: var(--c-h1);
-  padding-top: 8px;
-  padding-bottom: 2px;
-  line-height: 1.4;
-  min-height: calc(1.4em + 10px);
-}
-.line-highlight.h2 {
-  font-family: var(--serif);
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--c-h2);
-  line-height: 1.5;
-  padding-top: 4px;
-}
-.line-highlight.h3 {
-  font-family: var(--serif);
-  font-size: 0.9rem;
-  font-weight: 400;
-  font-style: italic;
-  color: var(--c-h3);
-  letter-spacing: 0.05em;
-}
-.line-highlight.comment-line {
-  color: var(--c-comment);
-}
-.line-highlight.empty-line { color: var(--text-dim); }
-
-/* Syntax token spans */
-.t-num    { color: var(--c-num); }
-.t-op     { color: var(--c-op); }
-.t-var    { color: var(--c-var); }
-.t-kw     { color: var(--c-kw); }
-.t-unit   { color: var(--c-unit); }
-.t-assign { color: var(--c-assign); }
-.t-paren  { color: var(--c-op); }
-.t-str    { color: var(--text-muted); }
-
-/* ══ HELP PANEL ═════════════════════════════ */
-#help-panel {
-  position: fixed;
-  top: 0; right: 0; bottom: 0;
-  width: 320px;
-  background: var(--bg2);
-  border-left: 1px solid var(--border);
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  transform: translateX(100%);
-  transition: transform 0.22s ease;
-  overflow: hidden;
-}
-#help-panel.open { transform: translateX(0); }
-
-.help-header {
+.sheet-action {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+  gap: 12px;
+  padding: 12px 16px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius);
+  margin: 0 8px 2px;
+  transition: background 0.12s, color 0.12s;
 }
+.sheet-action:hover, .sheet-action:active { background: var(--bg3); color: var(--text); }
+.sheet-action-icon { font-size: 1rem; width: 22px; text-align: center; }
+.sheet-action.danger { color: var(--c-error); }
+.sheet-action.danger:hover { background: #2a1010; }
 
-.help-title {
-  font-family: var(--serif);
-  font-size: 0.95rem;
-  color: var(--text);
-  font-style: italic;
-}
+/* ══ HELP SHEET ═════════════════════════════ */
+#help-sheet { max-height: 92dvh; }
 
 .help-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 14px 16px 32px;
+  padding: 4px 16px 20px;
 }
-
-.help-section {
-  margin-bottom: 22px;
-}
-
+.help-section { margin-bottom: 20px; }
 .help-section-title {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-dim);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   padding-bottom: 5px;
   border-bottom: 1px solid var(--border);
 }
-
 .help-row {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  margin-bottom: 7px;
+  margin-bottom: 6px;
   font-size: 0.78rem;
 }
-
 .help-code {
   font-family: var(--mono);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--c-num);
   background: var(--bg3);
   padding: 1px 6px;
@@ -461,187 +466,220 @@ html, body {
   white-space: nowrap;
   flex-shrink: 0;
 }
+.help-desc { color: var(--text-muted); line-height: 1.5; }
 
-.help-desc {
-  color: var(--text-muted);
-  line-height: 1.5;
+/* ══ RENAME SHEET ═══════════════════════════ */
+.rename-input {
+  width: calc(100% - 32px);
+  margin: 0 16px 16px;
+  background: var(--bg3);
+  border: 1px solid var(--c-var);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 1rem;
+  padding: 12px 14px;
+  outline: none;
+}
+.sheet-btn {
+  width: calc(100% - 32px);
+  margin: 0 16px 10px;
+  padding: 13px;
+  border-radius: var(--radius);
+  border: none;
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.sheet-btn-primary { background: var(--c-num); color: #13120f; font-weight: 500; }
+.sheet-btn-primary:hover { opacity: 0.88; }
+.sheet-btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+
+/* ══ LANDSCAPE ADJUSTMENTS ══════════════════ */
+@media (orientation: landscape) and (max-height: 500px) {
+  :root {
+    --toolbar-h: 40px;
+    --statusbar-h: 26px;
+    --result-w: 120px;
+    --lnum-w: 28px;
+  }
+  .line-highlight, .line-input { font-size: 0.8rem; }
+  .bottom-sheet { max-height: 95dvh; }
+  #line-nums { display: none; }
 }
 
-/* ══ STATUS BAR ═════════════════════════════ */
-#status-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 14px;
-  background: var(--bg2);
-  border-top: 1px solid var(--border);
-  font-size: 0.68rem;
-  color: var(--text-dim);
-  letter-spacing: 0.04em;
-  flex-shrink: 0;
+/* ══ DESKTOP ════════════════════════════════ */
+@media (min-width: 768px) {
+  :root { --result-w: 160px; --lnum-w: 38px; }
+  .line-highlight, .line-input { font-size: 0.9rem; }
+  #editor-lines { padding: 14px 0 80px; }
+  .bottom-sheet {
+    left: auto; right: 0; top: 0; bottom: auto;
+    width: 300px;
+    border-radius: var(--sheet-radius) 0 0 var(--sheet-radius);
+    border-top: none;
+    border-left: 1px solid var(--border2);
+    max-height: 100dvh;
+    transform: translateX(100%);
+  }
+  .bottom-sheet.open { transform: translateX(0); }
+  .sheet-handle { display: none; }
+  #help-sheet {
+    width: 340px;
+  }
 }
 
-.status-sum {
-  color: var(--c-result);
-  font-variant-numeric: tabular-nums;
-}
-
-/* scrollbar styling */
-::-webkit-scrollbar { width: 5px; height: 5px; }
+/* scrollbars */
+::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
-
-/* mobile tweaks */
-@media (max-width: 600px) {
-  :root { --sidebar-w: 170px; --result-w: 100px; }
-  #line-nums { width: 28px; min-width: 28px; }
-  .line-highlight, .line-input { font-size: 0.82rem; }
-}
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 </style>
 </head>
 <body>
-
 <div id="app">
 
-  <!-- ═══ SIDEBAR ═══════════════════════════ -->
-  <div id="sidebar">
-    <div class="sidebar-header">
-      <span class="app-wordmark">reckon.</span>
-      <button class="icon-btn" id="collapse-sidebar-btn" title="Hide sidebar">‹</button>
-    </div>
-    <button class="new-nb-btn" id="new-nb-btn">＋ new notebook</button>
-    <div class="nb-list" id="nb-list"></div>
+  <!-- ═══ TOOLBAR ═══════════════════════════ -->
+  <div id="toolbar">
+    <span class="app-wordmark">reckon.</span>
+    <button id="nb-title-btn" aria-label="Notebooks">untitled ▾</button>
+    <button class="icon-btn" id="rename-btn" title="Rename" aria-label="Rename notebook">✎</button>
+    <button class="icon-btn" id="help-btn" title="Reference" aria-label="Help">?</button>
   </div>
 
-  <!-- ═══ MAIN ══════════════════════════════ -->
-  <div id="main">
-    <div id="toolbar">
-      <button class="icon-btn" id="expand-sidebar-btn" title="Show notebooks" style="display:none">☰</button>
-      <div class="nb-title-display" id="nb-title-display">untitled</div>
-      <div class="toolbar-right">
-        <button class="icon-btn" id="rename-btn" title="Rename notebook">✎</button>
-        <div class="toolbar-sep"></div>
-        <button class="icon-btn" id="help-btn" title="Reference">?</button>
-      </div>
-    </div>
+  <!-- ═══ EDITOR ════════════════════════════ -->
+  <div id="editor-wrap">
+    <div id="line-nums"></div>
+    <div id="editor-lines" tabindex="0"></div>
+    <div id="results-col"></div>
+  </div>
 
-    <div id="editor-wrap">
-      <!-- line numbers -->
-      <div id="line-nums"></div>
-
-      <!-- lines -->
-      <div id="editor-lines" tabindex="0"></div>
-
-      <!-- results -->
-      <div id="results-col"></div>
-    </div>
-
-    <div id="status-bar">
-      <span id="status-line-info">line 1</span>
-      <span>page sum: <span class="status-sum" id="status-sum">—</span></span>
-    </div>
+  <!-- ═══ STATUS BAR ════════════════════════ -->
+  <div id="status-bar">
+    <span id="status-line-info">line 1</span>
+    <span>sum: <span class="status-sum" id="status-sum">—</span></span>
   </div>
 </div>
 
-<!-- ═══ HELP PANEL ══════════════════════════ -->
-<div id="help-panel">
-  <div class="help-header">
-    <span class="help-title">reference</span>
+<!-- ═══ BACKDROP ══════════════════════════════ -->
+<div class="sheet-backdrop" id="backdrop"></div>
+
+<!-- ═══ NOTEBOOKS SHEET ══════════════════════ -->
+<div class="bottom-sheet" id="nb-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <span class="sheet-title">notebooks</span>
+    <button class="icon-btn" id="nb-sheet-close">✕</button>
+  </div>
+  <div class="sheet-body">
+    <button class="new-nb-btn" id="new-nb-btn">＋ new notebook</button>
+    <div class="nb-list" id="nb-list"></div>
+    <div class="sheet-divider"></div>
+    <div class="sheet-action" id="export-btn">
+      <span class="sheet-action-icon">↓</span>
+      <span>export all notebooks (.json)</span>
+    </div>
+    <div class="sheet-action" id="import-trigger">
+      <span class="sheet-action-icon">↑</span>
+      <span>import notebooks (.json)</span>
+    </div>
+    <input type="file" id="import-file" accept=".json" style="display:none">
+  </div>
+</div>
+
+<!-- ═══ RENAME SHEET ═══════════════════════════ -->
+<div class="bottom-sheet" id="rename-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <span class="sheet-title">rename notebook</span>
+    <button class="icon-btn" id="rename-sheet-close">✕</button>
+  </div>
+  <div class="sheet-body" style="padding-top:12px">
+    <input class="rename-input" id="rename-input" type="text" placeholder="notebook name">
+    <button class="sheet-btn sheet-btn-primary" id="rename-confirm">rename</button>
+    <button class="sheet-btn sheet-btn-ghost" id="rename-cancel">cancel</button>
+  </div>
+</div>
+
+<!-- ═══ HELP SHEET ══════════════════════════════ -->
+<div class="bottom-sheet" id="help-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <span class="sheet-title">reference</span>
     <button class="icon-btn" id="help-close">✕</button>
   </div>
-  <div class="help-body">
+  <div class="sheet-body">
+    <div class="help-body">
 
-    <div class="help-section">
-      <div class="help-section-title">Headers (markdown)</div>
-      <div class="help-row"><span class="help-code"># Title</span><span class="help-desc">Large section header</span></div>
-      <div class="help-row"><span class="help-code">## Sub</span><span class="help-desc">Medium header</span></div>
-      <div class="help-row"><span class="help-code">### Note</span><span class="help-desc">Small italic header</span></div>
-    </div>
-
-    <div class="help-section">
-      <div class="help-section-title">Comments</div>
-      <div class="help-row"><span class="help-code">// text</span><span class="help-desc">Line comment — not evaluated</span></div>
-      <div class="help-row"><span class="help-code">-- text</span><span class="help-desc">Also a comment</span></div>
-    </div>
-
-    <div class="help-section">
-      <div class="help-section-title">Variables</div>
-      <div class="help-row"><span class="help-code">tax = 0.08</span><span class="help-desc">Assign a variable</span></div>
-      <div class="help-row"><span class="help-code">price = 1200</span><span class="help-desc">Assign numeric value</span></div>
-      <div class="help-row"><span class="help-code">price * tax</span><span class="help-desc">Use variable in expression</span></div>
-      <div class="help-row"><span class="help-code">total = a + b</span><span class="help-desc">Variable from expression</span></div>
-      <div class="help-desc" style="font-size:0.74rem;color:var(--text-dim);margin-top:4px">Variables persist for lines below their definition. Redefining resets them.</div>
-    </div>
-
-    <div class="help-section">
-      <div class="help-section-title">Operators</div>
-      <div class="help-row"><span class="help-code">+ - * /</span><span class="help-desc">Basic arithmetic</span></div>
-      <div class="help-row"><span class="help-code">^</span><span class="help-desc">Exponent (2^8 = 256)</span></div>
-      <div class="help-row"><span class="help-code">%</span><span class="help-desc">Modulo (10 % 3 = 1)</span></div>
-      <div class="help-row"><span class="help-code">( )</span><span class="help-desc">Grouping</span></div>
-    </div>
-
-    <div class="help-section">
-      <div class="help-section-title">Percentages</div>
-      <div class="help-row"><span class="help-code">20%</span><span class="help-desc">Treated as 0.20</span></div>
-      <div class="help-row"><span class="help-code">1200 * 20%</span><span class="help-desc">→ 240</span></div>
-      <div class="help-row"><span class="help-code">1200 + 20%</span><span class="help-desc">Adds 20% of 1200 → 1440</span></div>
-      <div class="help-row"><span class="help-code">1200 - 8%</span><span class="help-desc">Subtracts 8% of 1200 → 1104</span></div>
-    </div>
-
-    <div class="help-section">
-      <div class="help-section-title">Currency</div>
-      <div class="help-row"><span class="help-code">$1,200</span><span class="help-desc">Dollar sign and commas ignored in math</span></div>
-      <div class="help-row"><span class="help-code">$45.99 + $12</span><span class="help-desc">→ 57.99</span></div>
-    </div>
-
-    <div class="help-section">
-      <div class="help-section-title">Functions</div>
-      <div class="help-row"><span class="help-code">sqrt(16)</span><span class="help-desc">Square root → 4</span></div>
-      <div class="help-row"><span class="help-code">abs(-5)</span><span class="help-desc">Absolute value → 5</span></div>
-      <div class="help-row"><span class="help-code">round(3.7)</span><span class="help-desc">Round to integer → 4</span></div>
-      <div class="help-row"><span class="help-code">floor(3.9)</span><span class="help-desc">Round down → 3</span></div>
-      <div class="help-row"><span class="help-code">ceil(3.1)</span><span class="help-desc">Round up → 4</span></div>
-      <div class="help-row"><span class="help-code">min(a, b)</span><span class="help-desc">Smaller of two values</span></div>
-      <div class="help-row"><span class="help-code">max(a, b)</span><span class="help-desc">Larger of two values</span></div>
-      <div class="help-row"><span class="help-code">log(100)</span><span class="help-desc">Base-10 logarithm → 2</span></div>
-      <div class="help-row"><span class="help-code">ln(e)</span><span class="help-desc">Natural log → 1</span></div>
-      <div class="help-row"><span class="help-code">sin(pi/2)</span><span class="help-desc">Trig (radians) → 1</span></div>
-    </div>
-
-    <div class="help-section">
-      <div class="help-section-title">Constants</div>
-      <div class="help-row"><span class="help-code">pi</span><span class="help-desc">3.14159…</span></div>
-      <div class="help-row"><span class="help-code">e</span><span class="help-desc">2.71828…</span></div>
-    </div>
-
-    <div class="help-section">
-      <div class="help-section-title">Special keywords</div>
-      <div class="help-row"><span class="help-code">total</span><span class="help-desc">Sum of all numeric results above (resets after each use)</span></div>
-      <div class="help-row"><span class="help-code">subtotal</span><span class="help-desc">Same as total</span></div>
-      <div class="help-row"><span class="help-code">prev</span><span class="help-desc">Result of the previous evaluated line</span></div>
-    </div>
-
-    <div class="help-section">
-      <div class="help-section-title">Keyboard shortcuts</div>
-      <div class="help-row"><span class="help-code">Enter</span><span class="help-desc">New line below</span></div>
-      <div class="help-row"><span class="help-code">↑ ↓</span><span class="help-desc">Move between lines</span></div>
-      <div class="help-row"><span class="help-code">Backspace</span><span class="help-desc">Delete empty line, merge up</span></div>
-      <div class="help-row"><span class="help-code">Cmd/Ctrl+Z</span><span class="help-desc">Undo (browser built-in)</span></div>
-    </div>
-
-    <div class="help-section">
-      <div class="help-section-title">Tips</div>
-      <div class="help-desc" style="font-size:0.78rem;line-height:1.8;color:var(--text-muted)">
-        · Mix plain text with expressions freely<br>
-        · Text before a colon is treated as a label: <span style="color:var(--c-num)">rent: 1500</span><br>
-        · Variables are case-insensitive<br>
-        · Blank lines are fine — they separate sections<br>
-        · Results auto-format: large numbers get commas
+      <div class="help-section">
+        <div class="help-section-title">Headers</div>
+        <div class="help-row"><span class="help-code"># Title</span><span class="help-desc">Large header</span></div>
+        <div class="help-row"><span class="help-code">## Sub</span><span class="help-desc">Medium header</span></div>
+        <div class="help-row"><span class="help-code">### Note</span><span class="help-desc">Small italic header</span></div>
       </div>
-    </div>
 
+      <div class="help-section">
+        <div class="help-section-title">Comments</div>
+        <div class="help-row"><span class="help-code">// text</span><span class="help-desc">Not evaluated</span></div>
+        <div class="help-row"><span class="help-code">-- text</span><span class="help-desc">Also a comment</span></div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Variables</div>
+        <div class="help-row"><span class="help-code">tax = 0.08</span><span class="help-desc">Assign a variable</span></div>
+        <div class="help-row"><span class="help-code">price * tax</span><span class="help-desc">Use it below</span></div>
+        <div class="help-row"><span class="help-code">rent: 1500</span><span class="help-desc">Label shorthand</span></div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Operators</div>
+        <div class="help-row"><span class="help-code">+ - * /</span><span class="help-desc">Basic math</span></div>
+        <div class="help-row"><span class="help-code">^</span><span class="help-desc">Exponent (2^8 = 256)</span></div>
+        <div class="help-row"><span class="help-code">( )</span><span class="help-desc">Grouping</span></div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Percentages & Currency</div>
+        <div class="help-row"><span class="help-code">1200 + 20%</span><span class="help-desc">Adds 20% of 1200 → 1440</span></div>
+        <div class="help-row"><span class="help-code">1200 * 20%</span><span class="help-desc">→ 240</span></div>
+        <div class="help-row"><span class="help-code">$1,200</span><span class="help-desc">$ and commas ignored in math</span></div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Special Keywords</div>
+        <div class="help-row"><span class="help-code">total</span><span class="help-desc">Sum of all results above (resets after use)</span></div>
+        <div class="help-row"><span class="help-code">subtotal</span><span class="help-desc">Same as total</span></div>
+        <div class="help-row"><span class="help-code">prev</span><span class="help-desc">Previous line's result</span></div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Functions</div>
+        <div class="help-row"><span class="help-code">sqrt(16)</span><span class="help-desc">→ 4</span></div>
+        <div class="help-row"><span class="help-code">round(3.7)</span><span class="help-desc">→ 4</span></div>
+        <div class="help-row"><span class="help-code">abs(-5)</span><span class="help-desc">→ 5</span></div>
+        <div class="help-row"><span class="help-code">min(a,b) max(a,b)</span><span class="help-desc">Smaller / larger</span></div>
+        <div class="help-row"><span class="help-code">floor(x) ceil(x)</span><span class="help-desc">Round down / up</span></div>
+        <div class="help-row"><span class="help-code">sin cos tan</span><span class="help-desc">Trig (radians)</span></div>
+        <div class="help-row"><span class="help-code">log(x) ln(x)</span><span class="help-desc">Log base-10 / natural</span></div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Constants</div>
+        <div class="help-row"><span class="help-code">pi</span><span class="help-desc">3.14159…</span></div>
+        <div class="help-row"><span class="help-code">e</span><span class="help-desc">2.71828…</span></div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Data / Sync</div>
+        <div class="help-desc" style="font-size:0.78rem;line-height:1.9;color:var(--text-muted)">
+          Use <strong style="color:var(--text)">Export</strong> in the notebooks menu to download all data as a .json file.<br>
+          Save it to <strong style="color:var(--text)">iCloud Drive</strong> (or anywhere) for backup.<br>
+          Use <strong style="color:var(--text)">Import</strong> on another device to load it back.<br>
+          Import <em>merges</em> — existing notebooks are not deleted.
+        </div>
+      </div>
+
+    </div>
   </div>
 </div>
 
@@ -649,27 +687,63 @@ html, body {
 // ═══════════════════════════════════════════════
 // STORAGE
 // ═══════════════════════════════════════════════
-const STORE_KEY = 'reckon_notebooks';
-const ACTIVE_KEY = 'reckon_active';
+const STORE_KEY  = 'reckon_v2_notebooks';
+const ACTIVE_KEY = 'reckon_v2_active';
 
-function loadStore() {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
-  catch { return {}; }
-}
-function saveStore(s) { localStorage.setItem(STORE_KEY, JSON.stringify(s)); }
-function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
-
+function loadStore()    { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; } }
+function saveStore(s)   { localStorage.setItem(STORE_KEY, JSON.stringify(s)); }
+function genId()        { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 function getNotebooks() { return loadStore(); }
-function saveNotebook(id, nb) {
-  const s = loadStore();
-  s[id] = nb;
-  saveStore(s);
+function saveNotebook(id, nb) { const s = loadStore(); s[id] = nb; saveStore(s); }
+function deleteNotebook(id)   { const s = loadStore(); delete s[id]; saveStore(s); }
+
+// ═══════════════════════════════════════════════
+// EXPORT / IMPORT
+// ═══════════════════════════════════════════════
+function exportAll() {
+  const data = { version: 2, exported: new Date().toISOString(), notebooks: loadStore() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `reckon-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
-function deleteNotebook(id) {
-  const s = loadStore();
-  delete s[id];
-  saveStore(s);
+
+function importFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const incoming = data.notebooks || data; // support both formats
+      const store = loadStore();
+      let count = 0;
+      Object.entries(incoming).forEach(([id, nb]) => {
+        if (nb && nb.name !== undefined) {
+          // merge: if id already exists, keep existing unless incoming is newer
+          if (!store[id] || (nb.updated || 0) > (store[id].updated || 0)) {
+            store[id] = nb;
+            count++;
+          }
+        }
+      });
+      saveStore(store);
+      renderNotebookList();
+      closeAllSheets();
+      alert(`Imported ${count} notebook(s). Existing newer notebooks were kept.`);
+    } catch {
+      alert('Could not read file. Make sure it is a reckon export (.json).');
+    }
+  };
+  reader.readAsText(file);
 }
+
+document.getElementById('export-btn').addEventListener('click', exportAll);
+document.getElementById('import-trigger').addEventListener('click', () => document.getElementById('import-file').click());
+document.getElementById('import-file').addEventListener('change', (e) => {
+  if (e.target.files[0]) importFile(e.target.files[0]);
+  e.target.value = '';
+});
 
 // ═══════════════════════════════════════════════
 // MATH ENGINE
@@ -677,8 +751,6 @@ function deleteNotebook(id) {
 function evaluate(lines) {
   const vars = { pi: Math.PI, e: Math.E };
   const results = [];
-  const numericResults = []; // for total/subtotal
-  let lastNumeric = null;
   let prevResult = null;
   let totalAccum = 0;
 
@@ -687,90 +759,48 @@ function evaluate(lines) {
     const kind = lineKind(raw);
 
     if (kind === 'header' || kind === 'comment' || kind === 'blank') {
-      results.push({ type: kind, value: null });
-      continue;
+      results.push({ type: kind, value: null }); continue;
     }
 
-    // Strip label prefix: "rent: 1500" → "1500", assign label as nothing
     let expr = raw;
+    // strip label prefix: "rent: 1500" → "1500"
     const labelMatch = expr.match(/^([a-zA-Z_][a-zA-Z0-9_ ]*?):\s*(.+)$/);
     if (labelMatch) expr = labelMatch[2];
 
-    // strip currency symbols and commas
-    expr = expr.replace(/\$\s*/g, '').replace(/,(?=\d)/g, '');
+    // strip $ and commas
+    expr = expr.replace(/\$\s*/g,'').replace(/,(?=\d)/g,'');
 
-    // handle % carefully: "1200 + 20%" → "1200 + 1200*0.20"
-    // and standalone: "20%" → "0.20"
+    // percentages
     expr = resolvePercents(expr);
 
-    // check for assignment: "tax = 0.08"
+    // check assignment
     const assignMatch = expr.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.+)$/);
+    let evalExpr = assignMatch ? assignMatch[2] : expr;
 
-    // replace total/subtotal
-    if (/\b(total|subtotal)\b/i.test(expr)) {
-      expr = expr.replace(/\b(total|subtotal)\b/gi, totalAccum.toString());
-      totalAccum = 0; // reset after use
+    // total / subtotal
+    if (/\b(total|subtotal)\b/i.test(evalExpr)) {
+      evalExpr = evalExpr.replace(/\b(total|subtotal)\b/gi, totalAccum.toString());
+      totalAccum = 0;
     }
 
-    // replace prev
-    if (/\bprev\b/i.test(expr)) {
-      expr = expr.replace(/\bprev\b/gi, prevResult !== null ? prevResult.toString() : '0');
+    // prev
+    if (/\bprev\b/i.test(evalExpr)) {
+      evalExpr = evalExpr.replace(/\bprev\b/gi, prevResult !== null ? prevResult.toString() : '0');
     }
 
-    // substitute known variables (longest first to avoid partial matches)
+    // sub vars (longest first)
     const varNames = Object.keys(vars).sort((a,b) => b.length - a.length);
     for (const v of varNames) {
-      if (v === 'e' || v === 'pi') continue; // handled by safeEval
-      const re = new RegExp(`\\b${v}\\b`, 'gi');
-      expr = expr.replace(re, vars[v]);
-    }
-
-    // map functions
-    expr = expr
-      .replace(/\bsqrt\b/gi, 'Math.sqrt')
-      .replace(/\babs\b/gi, 'Math.abs')
-      .replace(/\bround\b/gi, 'Math.round')
-      .replace(/\bfloor\b/gi, 'Math.floor')
-      .replace(/\bceil\b/gi, 'Math.ceil')
-      .replace(/\bmin\b/gi, 'Math.min')
-      .replace(/\bmax\b/gi, 'Math.max')
-      .replace(/\bsin\b/gi, 'Math.sin')
-      .replace(/\bcos\b/gi, 'Math.cos')
-      .replace(/\btan\b/gi, 'Math.tan')
-      .replace(/\bln\b/gi, 'Math.log')
-      .replace(/\blog\b/gi, 'Math.log10')
-      .replace(/\bpi\b/gi, Math.PI)
-      .replace(/\be\b/g, Math.E)
-      .replace(/\^/g, '**');
-
-    let evalExpr = assignMatch ? assignMatch[2]
-      .replace(/\$\s*/g, '').replace(/,(?=\d)/g, '')
-      : expr;
-
-    // re-run transforms on RHS of assignment too
-    evalExpr = resolvePercents(evalExpr);
-    for (const v of varNames) {
       if (v === 'e' || v === 'pi') continue;
-      const re = new RegExp(`\\b${v}\\b`, 'gi');
-      evalExpr = evalExpr.replace(re, vars[v]);
+      evalExpr = evalExpr.replace(new RegExp(`\\b${escapeRE(v)}\\b`,'gi'), vars[v]);
     }
-    evalExpr = evalExpr
-      .replace(/\bsqrt\b/gi,'Math.sqrt').replace(/\babs\b/gi,'Math.abs')
-      .replace(/\bround\b/gi,'Math.round').replace(/\bfloor\b/gi,'Math.floor')
-      .replace(/\bceil\b/gi,'Math.ceil').replace(/\bmin\b/gi,'Math.min')
-      .replace(/\bmax\b/gi,'Math.max').replace(/\bsin\b/gi,'Math.sin')
-      .replace(/\bcos\b/gi,'Math.cos').replace(/\btan\b/gi,'Math.tan')
-      .replace(/\bln\b/gi,'Math.log').replace(/\blog\b/gi,'Math.log10')
-      .replace(/\bpi\b/gi, Math.PI).replace(/\be\b/g, Math.E)
-      .replace(/\^/g,'**');
+
+    evalExpr = applyTransforms(evalExpr);
 
     try {
-      // eslint-disable-next-line no-new-func
       const val = Function('"use strict"; return (' + evalExpr + ')')();
       if (typeof val === 'number' && isFinite(val)) {
-        if (assignMatch) {
-          vars[assignMatch[1].toLowerCase()] = val;
-        }
+        if (assignMatch) vars[assignMatch[1].toLowerCase()] = val;
         prevResult = val;
         totalAccum += val;
         results.push({ type: 'result', value: val });
@@ -778,50 +808,47 @@ function evaluate(lines) {
         results.push({ type: 'text', value: null });
       }
     } catch {
-      // might be pure text — only show error if it looks like math
-      if (looksLikeMath(raw)) {
-        results.push({ type: 'error', value: 'err' });
-      } else {
-        results.push({ type: 'text', value: null });
-      }
+      results.push(looksLikeMath(raw) ? { type: 'error', value: 'err' } : { type: 'text', value: null });
     }
   }
   return results;
 }
 
+function applyTransforms(expr) {
+  return expr
+    .replace(/\bsqrt\b/gi,'Math.sqrt').replace(/\babs\b/gi,'Math.abs')
+    .replace(/\bround\b/gi,'Math.round').replace(/\bfloor\b/gi,'Math.floor')
+    .replace(/\bceil\b/gi,'Math.ceil').replace(/\bmin\b/gi,'Math.min')
+    .replace(/\bmax\b/gi,'Math.max').replace(/\bsin\b/gi,'Math.sin')
+    .replace(/\bcos\b/gi,'Math.cos').replace(/\btan\b/gi,'Math.tan')
+    .replace(/\bln\b/gi,'Math.log').replace(/\blog\b/gi,'Math.log10')
+    .replace(/\bpi\b/gi, Math.PI).replace(/\be\b/g, Math.E)
+    .replace(/\^/g,'**');
+}
+
 function resolvePercents(expr) {
-  // "1200 + 20%" → "1200 + 1200*0.20" (contextual percent)
-  // "20%" alone → "0.20"
-  // We'll handle contextual: NUM OP NUM%
-  expr = expr.replace(/([\d.]+)\s*([+\-])\s*([\d.]+)%/g, (_, base, op, pct) => {
-    return `${base} ${op} ${base}*${pct/100}`;
-  });
-  // remaining standalone %
-  expr = expr.replace(/([\d.]+)%/g, (_, n) => (parseFloat(n)/100).toString());
+  expr = expr.replace(/([\d.]+)\s*([+\-])\s*([\d.]+)%/g, (_,base,op,pct) => `${base} ${op} ${base}*${pct/100}`);
+  expr = expr.replace(/([\d.]+)%/g, (_,n) => (parseFloat(n)/100).toString());
   return expr;
 }
 
-function looksLikeMath(s) {
-  return /[\d].*[+\-*/^]|[+\-*/^].*[\d]|\d\s*\(/.test(s);
-}
+function escapeRE(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function looksLikeMath(s) { return /[\d].*[+\-*/^]|[+\-*/^].*[\d]|\d\s*\(/.test(s); }
 
 function lineKind(raw) {
   const t = raw.trim();
   if (!t) return 'blank';
   if (t.startsWith('//') || t.startsWith('--')) return 'comment';
-  if (t.startsWith('### ') || t === '###') return 'h3';
-  if (t.startsWith('## ') || t === '##') return 'h2';
-  if (t.startsWith('# ') || t === '#') return 'h1';
+  if (/^###\s?/.test(t)) return 'h3';
+  if (/^##\s?/.test(t))  return 'h2';
+  if (/^#\s?/.test(t))   return 'h1';
   return 'expr';
 }
 
 function formatResult(val) {
-  if (val === null || val === undefined) return null;
-  // round floating point noise
-  const rounded = Math.round(val * 1e10) / 1e10;
-  // add commas for thousands
-  const parts = rounded.toString().split('.');
-  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const r = Math.round(val * 1e10) / 1e10;
+  const parts = r.toString().split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
   return parts.join('.');
 }
 
@@ -833,46 +860,28 @@ function highlight(raw) {
   if (kind === 'comment') return `<span class="t-str">${esc(raw)}</span>`;
   if (kind === 'h1' || kind === 'h2' || kind === 'h3') return esc(raw);
   if (kind === 'blank') return '';
-
   let s = esc(raw);
-
-  // label prefix
-  s = s.replace(/^([a-zA-Z_][a-zA-Z0-9_ ]*?)(:)(\s*)/, (_, lbl, colon, sp) =>
-    `<span class="t-var">${lbl}</span><span class="t-op">${colon}</span>${sp}`);
-
-  // assignment
-  s = s.replace(/^(<span class="t-var">.*?<\/span>)?([a-zA-Z_][a-zA-Z0-9_]*)\s*(=)(?!=)/,
-    (m, pre, name, eq) => pre
-      ? m
-      : `<span class="t-assign">${name}</span> <span class="t-op">=</span>`);
-
-  // keywords
-  s = s.replace(/\b(total|subtotal|prev)\b/gi, '<span class="t-kw">$1</span>');
-
-  // functions
-  s = s.replace(/\b(sqrt|abs|round|floor|ceil|min|max|sin|cos|tan|ln|log)\b/gi,
-    '<span class="t-kw">$1</span>');
-
-  // constants
-  s = s.replace(/\b(pi|e)\b/g, '<span class="t-unit">$1</span>');
-
-  // numbers with optional $ and %
-  s = s.replace(/(\$?\s*[\d,]+(?:\.\d+)?%?)/g, (m) => {
-    if (/\$/.test(m)) return `<span class="t-unit">${m}</span>`;
-    if (/%/.test(m)) return `<span class="t-unit">${m}</span>`;
+  // label
+  s = s.replace(/^([a-zA-Z_][a-zA-Z0-9_ ]*?)(:)(\s*)/,
+    (_,lbl,colon,sp) => `<span class="t-var">${lbl}</span><span class="t-op">${colon}</span>${sp}`);
+  // assignment (only if no label matched)
+  if (!/<span class="t-var">/.test(s)) {
+    s = s.replace(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*(=)(?!=)/,
+      (_,name,eq) => `<span class="t-assign">${name}</span> <span class="t-op">${eq}</span>`);
+  }
+  s = s.replace(/\b(total|subtotal|prev)\b/gi,'<span class="t-kw">$1</span>');
+  s = s.replace(/\b(sqrt|abs|round|floor|ceil|min|max|sin|cos|tan|ln|log)\b/gi,'<span class="t-kw">$1</span>');
+  s = s.replace(/\b(pi|e)\b/g,'<span class="t-unit">$1</span>');
+  s = s.replace(/(\$?\s*[\d,]+(?:\.\d+)?%?)/g, m => {
+    if (/\$/.test(m) || /%/.test(m)) return `<span class="t-unit">${m}</span>`;
     return `<span class="t-num">${m}</span>`;
   });
-
-  // operators
-  s = s.replace(/([+\-*\/^%])/g, '<span class="t-op">$1</span>');
-  s = s.replace(/([()])/g, '<span class="t-paren">$1</span>');
-
+  s = s.replace(/([+\-*\/^])/g,'<span class="t-op">$1</span>');
+  s = s.replace(/([()])/g,'<span class="t-paren">$1</span>');
   return s;
 }
 
-function esc(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // ═══════════════════════════════════════════════
 // EDITOR STATE
@@ -882,79 +891,69 @@ let activeLine = 0;
 let activeNotebookId = null;
 let saveTimer = null;
 
-function currentLines() { return lines; }
-
 function scheduleSave() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    if (activeNotebookId) {
-      const nbs = getNotebooks();
-      if (nbs[activeNotebookId]) {
-        nbs[activeNotebookId].content = lines.join('\n');
-        nbs[activeNotebookId].updated = Date.now();
-        saveStore(nbs);
-      }
+    if (!activeNotebookId) return;
+    const nbs = getNotebooks();
+    if (nbs[activeNotebookId]) {
+      nbs[activeNotebookId].content = lines.join('\n');
+      nbs[activeNotebookId].updated = Date.now();
+      saveStore(nbs);
     }
   }, 400);
 }
 
 // ═══════════════════════════════════════════════
-// RENDER ENGINE
+// RENDER
 // ═══════════════════════════════════════════════
 function render() {
   const results = evaluate(lines);
-  const editorEl = document.getElementById('editor-lines');
+  const editorEl  = document.getElementById('editor-lines');
   const resultsEl = document.getElementById('results-col');
   const lineNumsEl = document.getElementById('line-nums');
 
-  // Build DOM efficiently
   const rowFrag = document.createDocumentFragment();
   const resFrag = document.createDocumentFragment();
-  const lnFrag = document.createDocumentFragment();
-
-  let pageSum = 0;
-  let hasSum = false;
+  const lnFrag  = document.createDocumentFragment();
+  let pageSum = 0, hasSum = false;
 
   results.forEach((res, i) => {
-    const raw = lines[i] || '';
+    const raw  = lines[i] || '';
     const kind = lineKind(raw);
 
-    // line number
     const ln = document.createElement('span');
     ln.className = 'ln';
     ln.textContent = i + 1;
     lnFrag.appendChild(ln);
 
-    // editor row
     const row = document.createElement('div');
     row.className = 'editor-row' + (i === activeLine ? ' active-row' : '');
     row.dataset.idx = i;
 
     const hl = document.createElement('div');
-    hl.className = 'line-highlight' + (kind !== 'expr' && kind !== 'blank' ? ' ' + (kind === 'comment' ? 'comment-line' : kind) : '');
+    const hlClasses = ['line-highlight'];
+    if (kind === 'comment') hlClasses.push('comment-line');
+    else if (kind === 'h1' || kind === 'h2' || kind === 'h3') hlClasses.push(kind);
+    hl.className = hlClasses.join(' ');
+    hl.innerHTML = highlight(raw) || '&ZeroWidthSpace;';
 
     if (i === activeLine) {
-      // active line: show raw text via input overlay
-      hl.innerHTML = highlight(raw) || '&ZeroWidthSpace;';
       const inp = document.createElement('textarea');
       inp.className = 'line-input';
       inp.value = raw;
       inp.rows = 1;
       inp.spellcheck = false;
       inp.autocomplete = 'off';
+      inp.autocorrect = 'off';
+      inp.autocapitalize = 'off';
       inp.dataset.idx = i;
       inp.addEventListener('input', onInput);
       inp.addEventListener('keydown', onKeyDown);
-      inp.addEventListener('blur', () => { renderHighlightOnly(i); });
       row.appendChild(hl);
       row.appendChild(inp);
-      // auto-focus after render
-      requestAnimationFrame(() => {
-        inp.focus();
-        // place cursor at end if not already focused
-      });
+      requestAnimationFrame(() => { inp.focus({ preventScroll: true }); });
     } else {
-      hl.innerHTML = highlight(raw) || '&ZeroWidthSpace;';
       hl.addEventListener('click', () => setActiveLine(i));
       row.appendChild(hl);
     }
@@ -965,14 +964,11 @@ function render() {
     const cell = document.createElement('div');
     if (kind === 'h1' || kind === 'h2' || kind === 'h3') {
       cell.className = 'result-cell head';
-      cell.textContent = '';
     } else if (res.type === 'result' && res.value !== null) {
-      const fmtd = formatResult(res.value);
       cell.className = 'result-cell';
-      cell.textContent = fmtd;
+      cell.textContent = formatResult(res.value);
       cell.title = res.value;
-      pageSum += res.value;
-      hasSum = true;
+      pageSum += res.value; hasSum = true;
     } else if (res.type === 'error') {
       cell.className = 'result-cell err';
       cell.textContent = '!';
@@ -990,48 +986,23 @@ function render() {
   resultsEl.appendChild(resFrag);
   lineNumsEl.appendChild(lnFrag);
 
-  // status bar
-  document.getElementById('status-line-info').textContent = `line ${activeLine + 1} / ${lines.length}`;
+  document.getElementById('status-line-info').textContent = `line ${activeLine+1} / ${lines.length}`;
   document.getElementById('status-sum').textContent = hasSum ? formatResult(pageSum) : '—';
 
-  // sync scroll
   syncScroll();
   scheduleSave();
 }
 
-function renderHighlightOnly(idx) {
-  // re-render just the highlight for a non-active line without full re-render
-  // (called on blur to avoid focus stealing)
-}
-
 function syncScroll() {
-  const editorEl = document.getElementById('editor-lines');
-  const resultsEl = document.getElementById('results-col');
-  const lineNumsEl = document.getElementById('line-nums');
-  resultsEl.scrollTop = editorEl.scrollTop;
-  lineNumsEl.scrollTop = editorEl.scrollTop;
+  const ed = document.getElementById('editor-lines');
+  document.getElementById('results-col').scrollTop = ed.scrollTop;
+  document.getElementById('line-nums').scrollTop    = ed.scrollTop;
 }
-
-document.getElementById('editor-lines').addEventListener('scroll', syncScroll);
+document.getElementById('editor-lines').addEventListener('scroll', syncScroll, { passive: true });
 
 function setActiveLine(idx) {
   activeLine = Math.max(0, Math.min(idx, lines.length - 1));
   render();
-}
-
-// ═══════════════════════════════════════════════
-// INPUT HANDLING
-// ═══════════════════════════════════════════════
-function onInput(e) {
-  const inp = e.target;
-  const idx = parseInt(inp.dataset.idx);
-  lines[idx] = inp.value;
-  // Update highlight in real-time without full re-render
-  const hl = inp.previousSibling;
-  if (hl) hl.innerHTML = highlight(inp.value) || '&ZeroWidthSpace;';
-  scheduleSave();
-  // re-evaluate results column only
-  updateResults();
 }
 
 function updateResults() {
@@ -1039,27 +1010,27 @@ function updateResults() {
   const cells = document.querySelectorAll('#results-col .result-cell');
   let pageSum = 0, hasSum = false;
   results.forEach((res, i) => {
-    const cell = cells[i];
-    if (!cell) return;
+    const cell = cells[i]; if (!cell) return;
     const kind = lineKind(lines[i] || '');
-    if (kind === 'h1' || kind === 'h2' || kind === 'h3') {
-      cell.className = 'result-cell head';
-      cell.textContent = '';
-    } else if (res.type === 'result' && res.value !== null) {
-      cell.className = 'result-cell';
-      cell.textContent = formatResult(res.value);
-      cell.title = res.value;
-      pageSum += res.value;
-      hasSum = true;
-    } else if (res.type === 'error') {
-      cell.className = 'result-cell err';
-      cell.textContent = '!';
-    } else {
-      cell.className = 'result-cell empty';
-      cell.textContent = '·';
-    }
+    if (kind === 'h1'||kind === 'h2'||kind === 'h3') { cell.className='result-cell head'; cell.textContent=''; }
+    else if (res.type==='result'&&res.value!==null) { cell.className='result-cell'; cell.textContent=formatResult(res.value); cell.title=res.value; pageSum+=res.value; hasSum=true; }
+    else if (res.type==='error') { cell.className='result-cell err'; cell.textContent='!'; }
+    else { cell.className='result-cell empty'; cell.textContent='·'; }
   });
   document.getElementById('status-sum').textContent = hasSum ? formatResult(pageSum) : '—';
+}
+
+// ═══════════════════════════════════════════════
+// INPUT
+// ═══════════════════════════════════════════════
+function onInput(e) {
+  const inp = e.target;
+  const idx = parseInt(inp.dataset.idx);
+  lines[idx] = inp.value;
+  const hl = inp.previousSibling;
+  if (hl) hl.innerHTML = highlight(inp.value) || '&ZeroWidthSpace;';
+  updateResults();
+  scheduleSave();
 }
 
 function onKeyDown(e) {
@@ -1068,59 +1039,91 @@ function onKeyDown(e) {
 
   if (e.key === 'Enter') {
     e.preventDefault();
-    // insert line below
-    lines.splice(idx + 1, 0, '');
-    activeLine = idx + 1;
-    render();
-    return;
+    lines.splice(idx+1, 0, '');
+    activeLine = idx+1;
+    render(); return;
   }
-
-  if (e.key === 'ArrowDown') {
-    if (idx < lines.length - 1) {
-      e.preventDefault();
-      activeLine = idx + 1;
-      render();
-    }
-    return;
+  if (e.key === 'ArrowDown' && idx < lines.length-1) {
+    e.preventDefault(); activeLine = idx+1; render(); return;
   }
-
-  if (e.key === 'ArrowUp') {
-    if (idx > 0) {
-      e.preventDefault();
-      activeLine = idx - 1;
-      render();
-    }
-    return;
+  if (e.key === 'ArrowUp' && idx > 0) {
+    e.preventDefault(); activeLine = idx-1; render(); return;
   }
-
-  if (e.key === 'Backspace' && inp.value === '') {
-    if (lines.length > 1) {
-      e.preventDefault();
-      lines.splice(idx, 1);
-      activeLine = Math.max(0, idx - 1);
-      render();
-    }
-    return;
+  if (e.key === 'Backspace' && inp.value === '' && lines.length > 1) {
+    e.preventDefault();
+    lines.splice(idx, 1);
+    activeLine = Math.max(0, idx-1);
+    render(); return;
   }
-
   if (e.key === 'Tab') {
     e.preventDefault();
-    const start = inp.selectionStart;
-    const newVal = inp.value.slice(0, start) + '    ' + inp.value.slice(inp.selectionEnd);
-    inp.value = newVal;
-    inp.setSelectionRange(start + 4, start + 4);
-    lines[idx] = newVal;
+    const s = inp.selectionStart;
+    inp.value = inp.value.slice(0,s) + '    ' + inp.value.slice(inp.selectionEnd);
+    inp.setSelectionRange(s+4, s+4);
+    lines[idx] = inp.value;
     scheduleSave();
-    return;
   }
 }
 
-// Click on editor area (not on a row) → add line at end
 document.getElementById('editor-lines').addEventListener('click', (e) => {
   if (e.target === document.getElementById('editor-lines')) {
-    activeLine = lines.length - 1;
-    render();
+    activeLine = lines.length-1; render();
   }
+});
+
+// ═══════════════════════════════════════════════
+// SHEET SYSTEM
+// ═══════════════════════════════════════════════
+const backdrop = document.getElementById('backdrop');
+let openSheet = null;
+
+function openSheetEl(id) {
+  if (openSheet) closeAllSheets();
+  const el = document.getElementById(id);
+  el.classList.add('open');
+  backdrop.classList.add('open');
+  openSheet = id;
+}
+
+function closeAllSheets() {
+  document.querySelectorAll('.bottom-sheet.open').forEach(s => s.classList.remove('open'));
+  backdrop.classList.remove('open');
+  openSheet = null;
+}
+
+backdrop.addEventListener('click', closeAllSheets);
+
+document.getElementById('nb-title-btn').addEventListener('click', () => {
+  renderNotebookList();
+  openSheetEl('nb-sheet');
+});
+document.getElementById('nb-sheet-close').addEventListener('click', closeAllSheets);
+document.getElementById('help-btn').addEventListener('click', () => openSheetEl('help-sheet'));
+document.getElementById('help-close').addEventListener('click', closeAllSheets);
+
+// ═══════════════════════════════════════════════
+// RENAME SHEET
+// ═══════════════════════════════════════════════
+document.getElementById('rename-btn').addEventListener('click', () => {
+  const nbs = getNotebooks();
+  document.getElementById('rename-input').value = nbs[activeNotebookId]?.name || '';
+  openSheetEl('rename-sheet');
+  setTimeout(() => document.getElementById('rename-input').focus(), 100);
+});
+document.getElementById('rename-sheet-close').addEventListener('click', closeAllSheets);
+document.getElementById('rename-cancel').addEventListener('click', closeAllSheets);
+document.getElementById('rename-confirm').addEventListener('click', () => {
+  const name = document.getElementById('rename-input').value.trim() || 'untitled';
+  if (activeNotebookId) {
+    const nbs = getNotebooks();
+    if (nbs[activeNotebookId]) { nbs[activeNotebookId].name = name; saveStore(nbs); }
+  }
+  document.getElementById('nb-title-btn').textContent = name + ' ▾';
+  closeAllSheets();
+});
+document.getElementById('rename-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('rename-confirm').click();
+  if (e.key === 'Escape') closeAllSheets();
 });
 
 // ═══════════════════════════════════════════════
@@ -1139,9 +1142,7 @@ function renderNotebookList() {
     const label = document.createElement('span');
     label.className = 'nb-label';
     label.textContent = nb.name || 'untitled';
-    label.title = nb.name || 'untitled';
-    label.addEventListener('click', () => openNotebook(id));
-    label.addEventListener('dblclick', () => startRenameInline(id, item, label));
+    label.addEventListener('click', () => { openNotebook(id); closeAllSheets(); });
 
     const del = document.createElement('button');
     del.className = 'icon-btn nb-del';
@@ -1153,34 +1154,6 @@ function renderNotebookList() {
     item.appendChild(del);
     list.appendChild(item);
   });
-
-  // update toolbar title
-  if (activeNotebookId && nbs[activeNotebookId]) {
-    document.getElementById('nb-title-display').textContent = nbs[activeNotebookId].name || 'untitled';
-  }
-}
-
-function startRenameInline(id, item, label) {
-  const inp = document.createElement('input');
-  inp.className = 'nb-label-input';
-  inp.value = label.textContent;
-  item.replaceChild(inp, label);
-  inp.focus();
-  inp.select();
-
-  function commit() {
-    const nbs = getNotebooks();
-    if (nbs[id]) {
-      nbs[id].name = inp.value.trim() || 'untitled';
-      saveStore(nbs);
-    }
-    renderNotebookList();
-  }
-  inp.addEventListener('blur', commit);
-  inp.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { inp.blur(); }
-    if (e.key === 'Escape') { item.replaceChild(label, inp); }
-  });
 }
 
 function openNotebook(id) {
@@ -1190,9 +1163,9 @@ function openNotebook(id) {
   localStorage.setItem(ACTIVE_KEY, id);
   const content = nbs[id].content || '';
   lines = content ? content.split('\n') : [''];
-  if (lines.length === 0) lines = [''];
+  if (!lines.length) lines = [''];
   activeLine = 0;
-  renderNotebookList();
+  document.getElementById('nb-title-btn').textContent = (nbs[id].name || 'untitled') + ' ▾';
   render();
 }
 
@@ -1202,81 +1175,40 @@ function newNotebook() {
   nbs[id] = { name: 'untitled', content: '', created: Date.now(), updated: Date.now() };
   saveStore(nbs);
   openNotebook(id);
-  // trigger rename
+  closeAllSheets();
+  // open rename sheet
   setTimeout(() => {
-    const item = document.querySelector(`.nb-item[data-id="${id}"]`);
-    const label = item?.querySelector('.nb-label');
-    if (item && label) startRenameInline(id, item, label);
+    document.getElementById('rename-input').value = '';
+    openSheetEl('rename-sheet');
+    setTimeout(() => document.getElementById('rename-input').focus(), 100);
   }, 50);
 }
 
 function confirmDelete(id) {
   const nbs = getNotebooks();
   const name = nbs[id]?.name || 'untitled';
-  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  if (!confirm(`Delete "${name}"?`)) return;
   deleteNotebook(id);
-  if (activeNotebookId === id) {
-    const remaining = Object.keys(getNotebooks());
-    if (remaining.length > 0) openNotebook(remaining[0]);
-    else newNotebook();
-  } else {
-    renderNotebookList();
-  }
+  const remaining = Object.keys(getNotebooks());
+  if (remaining.length > 0) openNotebook(remaining[0]);
+  else newNotebook();
+  renderNotebookList();
 }
 
-function renameActiveNotebook() {
-  const item = document.querySelector(`.nb-item.active`);
-  const label = item?.querySelector('.nb-label');
-  if (item && label) startRenameInline(activeNotebookId, item, label);
-}
-
-// ═══════════════════════════════════════════════
-// SIDEBAR COLLAPSE
-// ═══════════════════════════════════════════════
-let sidebarOpen = true;
-
-document.getElementById('collapse-sidebar-btn').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.add('collapsed');
-  document.getElementById('expand-sidebar-btn').style.display = '';
-  sidebarOpen = false;
-});
-
-document.getElementById('expand-sidebar-btn').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.remove('collapsed');
-  document.getElementById('expand-sidebar-btn').style.display = 'none';
-  sidebarOpen = true;
-});
-
-// ═══════════════════════════════════════════════
-// HELP PANEL
-// ═══════════════════════════════════════════════
-document.getElementById('help-btn').addEventListener('click', () => {
-  document.getElementById('help-panel').classList.toggle('open');
-});
-document.getElementById('help-close').addEventListener('click', () => {
-  document.getElementById('help-panel').classList.remove('open');
-});
-
-// ═══════════════════════════════════════════════
-// TOOLBAR
-// ═══════════════════════════════════════════════
 document.getElementById('new-nb-btn').addEventListener('click', newNotebook);
-document.getElementById('rename-btn').addEventListener('click', renameActiveNotebook);
 
 // ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
 (function init() {
   let nbs = getNotebooks();
-
-  // Create default notebook if none exist
   if (Object.keys(nbs).length === 0) {
     const id = genId();
     nbs[id] = {
       name: 'scratch',
       content: [
         '# My First Notebook',
-        '// Try typing expressions below. Variables, %, $ all work.',
+        '// Try typing expressions below.',
         '',
         '## Budget',
         'rent: 1500',
@@ -1288,18 +1220,11 @@ document.getElementById('rename-btn').addEventListener('click', renameActiveNote
         'price = 249.99',
         'tax = 8.5%',
         'price + price * tax',
-        '',
-        '## Notes',
-        'This is plain text — no result shown.',
-        'Mix anything together freely.',
       ].join('\n'),
-      created: Date.now(),
-      updated: Date.now()
+      created: Date.now(), updated: Date.now()
     };
     saveStore(nbs);
   }
-
-  // Restore last active notebook
   const lastId = localStorage.getItem(ACTIVE_KEY);
   nbs = getNotebooks();
   const firstId = lastId && nbs[lastId] ? lastId : Object.keys(nbs)[0];

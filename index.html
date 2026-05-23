@@ -1270,6 +1270,22 @@ function showUpdateBanner() {
 }
 </script>
 
+  <script>
+(async () => {
+  try {
+    const cache = await caches.open('app-version');
+    const res = await cache.match('/app-version');
+    if (res) {
+      const v = await res.text();
+      const el = document.createElement('div');
+      el.textContent = v;
+      el.style.cssText = 'position:fixed;bottom:calc(env(safe-area-inset-bottom)+6px);right:10px;font-family:monospace;font-size:0.6rem;color:#ffffff18;pointer-events:none;z-index:9999;letter-spacing:0.05em';
+      document.body.appendChild(el);
+    }
+  } catch {}
+})();
+</script>
+
 
 </body>
 </html>
